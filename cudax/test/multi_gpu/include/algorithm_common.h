@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/std/cstddef>
+#include <cuda/std/random>
 
 #include <chrono>
 #include <exception>
