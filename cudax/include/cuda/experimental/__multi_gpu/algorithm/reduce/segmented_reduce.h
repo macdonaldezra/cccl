@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_SEGMENTED_REDUCE_H
-#define _CUDA_EXPERIMENTAL___MULTI_GPU_SEGMENTED_REDUCE_H
+#ifndef _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_REDUCE_SEGMENTED_REDUCE_H
+#define _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_REDUCE_SEGMENTED_REDUCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -453,4 +453,4 @@ _CCCL_HOST_API void segmented_reduce(
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_SEGMENTED_REDUCE_H
+#endif // _CUDA_EXPERIMENTAL___MULTI_GPU_ALGORITHM_REDUCE_SEGMENTED_REDUCE_H
