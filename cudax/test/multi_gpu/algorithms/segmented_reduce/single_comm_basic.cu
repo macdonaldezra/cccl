@@ -43,14 +43,13 @@ void do_segmented_reduce_threaded(
   std::vector<cuda::device_buffer<T>>& in,
   cuda::std::size_t num_segments,
   std::vector<cuda::device_buffer<offset_type>>& offsets,
-  std::vector<typename cuda::device_buffer<T>::iterator>& outputs,
+  std::vector<cuda::device_buffer<T>>& out,
   const T& init,
   const T& ident,
   Op op)
 {
   const auto in_copy      = in;
   const auto offsets_copy = offsets;
-  const auto outputs_copy = outputs;
 
   INFO("init = " << init);
   INFO("ident = " << ident);
@@ -66,7 +65,7 @@ void do_segmented_reduce_threaded(
       num_segments,
       offsets[i].begin(),
       offsets[i].begin() + 1,
-      outputs[i],
+      out[i].begin(),
       init,
       op,
       ident);
@@ -81,7 +80,6 @@ void do_segmented_reduce_threaded(
     REQUIRE_THAT(in[i], Equals(in_copy[i]));
     REQUIRE_THAT(offsets[i], Equals(offsets_copy[i]));
   }
-  REQUIRE_THAT(outputs, Catch::Matchers::Equals(outputs_copy));
 }
 } // namespace
 
@@ -122,9 +120,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, one segment of one element per ran
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -165,9 +161,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, multiple equal-sized segments per 
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -208,9 +202,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, ragged segments per rank", value_t
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -264,9 +256,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, segment lengths differ across rank
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -307,9 +297,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, some segments empty", value_types,
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -364,9 +352,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, some ranks empty", value_types, op
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -407,9 +393,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, all ranks empty", value_types, ope
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
   check_outputs(out, values_by_rank, offsets_by_rank, num_segments, init, Op{});
 }
 
@@ -457,9 +441,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, zero segments", value_types, opera
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
-  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, outputs, init, ident, Op{});
+  do_segmented_reduce_threaded(comms, envs, in, num_segments, offsets, out, init, ident, Op{});
 
   for (cuda::std::size_t i = 0; i < out.size(); ++i)
   {

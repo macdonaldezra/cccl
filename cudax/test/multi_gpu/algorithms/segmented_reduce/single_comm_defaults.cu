@@ -68,8 +68,6 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
     envs.emplace_back(::cuda::std::execution::env{::cuda::stream_ref{streams[i]}});
   }
 
-  auto outputs = make_output_iterators(out);
-
   const auto expected = [&] {
     std::vector<T> reference(num_segments, init);
 
@@ -96,7 +94,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
         num_segments,
         offsets[i].begin(),
         offsets[i].begin() + 1,
-        outputs[i]);
+        out[i].begin());
     });
 
     for (const auto& buf : out)
@@ -116,7 +114,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
         num_segments,
         offsets[i].begin(),
         offsets[i].begin() + 1,
-        outputs[i],
+        out[i].begin(),
         init);
     });
 
@@ -137,7 +135,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
         num_segments,
         offsets[i].begin(),
         offsets[i].begin() + 1,
-        outputs[i],
+        out[i].begin(),
         init,
         op);
     });
@@ -159,7 +157,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
         num_segments,
         offsets[i].begin(),
         offsets[i].begin() + 1,
-        outputs[i],
+        out[i].begin(),
         init,
         op,
         ident);
