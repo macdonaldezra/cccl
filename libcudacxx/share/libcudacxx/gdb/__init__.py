@@ -27,6 +27,7 @@ import inplace_vector  # noqa: E402
 import mdspan  # noqa: E402
 import memory_pool  # noqa: E402
 import memory_resource  # noqa: E402
+import optional  # noqa: E402
 import span  # noqa: E402
 import std_array  # noqa: E402
 import stream  # noqa: E402
@@ -45,6 +46,7 @@ _PRINTERS = (
     hierarchy,
     mdspan,
     memory_pool,
+    optional,
     span,
 )
 
