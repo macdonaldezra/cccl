@@ -1,5 +1,5 @@
 =============== optional.empty begin ===============
-cuda::std::optional<int> = nullopt
+cuda::std::optional<int> [nullopt]
 =============== optional.empty end ===============
 =============== optional.int begin ===============
 cuda::std::optional<int> = {
@@ -27,7 +27,7 @@ cuda::std::optional<int> = {
 }
 =============== optional.alias end ===============
 =============== optional.nontrivial.empty begin ===============
-cuda::std::optional<nontrivial> = nullopt
+cuda::std::optional<nontrivial> [nullopt]
 =============== optional.nontrivial.empty end ===============
 =============== optional.nontrivial begin ===============
 cuda::std::optional<nontrivial> = {
@@ -37,11 +37,11 @@ cuda::std::optional<nontrivial> = {
 }
 =============== optional.nontrivial end ===============
 =============== optional.nested.empty begin ===============
-cuda::std::optional<cuda::std::optional<int>> = nullopt
+cuda::std::optional<cuda::std::optional<int>> [nullopt]
 =============== optional.nested.empty end ===============
 =============== optional.nested.inner_empty begin ===============
 cuda::std::optional<cuda::std::optional<int>> = {
-  value = cuda::std::optional<int> = nullopt
+  value = cuda::std::optional<int> [nullopt]
 }
 =============== optional.nested.inner_empty end ===============
 =============== optional.nested begin ===============
@@ -98,10 +98,10 @@ cuda::std::optional<int> = {
 }
 =============== optional.update.before_reset end ===============
 =============== optional.update.after_reset begin ===============
-cuda::std::optional<int> = nullopt
+cuda::std::optional<int> [nullopt]
 =============== optional.update.after_reset end ===============
 =============== optional.update.before_emplace begin ===============
-cuda::std::optional<int> = nullopt
+cuda::std::optional<int> [nullopt]
 =============== optional.update.before_emplace end ===============
 =============== optional.update.after_emplace begin ===============
 cuda::std::optional<int> = {
@@ -109,7 +109,7 @@ cuda::std::optional<int> = {
 }
 =============== optional.update.after_emplace end ===============
 =============== optional.reference.empty begin ===============
-cuda::std::optional<int&> = nullopt
+cuda::std::optional<int&> [nullopt]
 =============== optional.reference.empty end ===============
 =============== optional.reference begin ===============
 cuda::std::optional<int&> = {
@@ -118,7 +118,7 @@ cuda::std::optional<int&> = {
 =============== optional.reference end ===============
 =============== optional.reference.before_update begin ===============
 cuda::std::optional<int&> = {
-  value = 12
+  value = 7
 }
 =============== optional.reference.before_update end ===============
 =============== optional.reference.after_update begin ===============

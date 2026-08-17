@@ -6,6 +6,9 @@
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
 
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
 #define KEEP_FOR_DEBUGGER(value) asm volatile("" : : "g"(&(value)) : "memory")
 
 struct nontrivial
@@ -26,36 +29,125 @@ using array_optional        = cuda::std::optional<cuda::std::array<int, 3>>;
 using empty_array_optional  = cuda::std::optional<cuda::std::array<int, 0>>;
 using nested_array_optional = cuda::std::optional<cuda::std::array<cuda::std::array<int, 2>, 2>>;
 
-#define INSPECT(name, type)                      \
-  [[gnu::noinline]] void name(const type& value) \
-  {                                              \
-    KEEP_FOR_DEBUGGER(value);                    \
-  }
+[[gnu::noinline]] void inspect_empty(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
 
-INSPECT(inspect_empty, cuda::std::optional<int>)
-INSPECT(inspect_int, cuda::std::optional<int>)
-INSPECT(inspect_zero, cuda::std::optional<int>)
-INSPECT(inspect_false, cuda::std::optional<bool>)
-INSPECT(inspect_const, cuda::std::optional<const int>)
-INSPECT(inspect_alias, optional_alias)
-INSPECT(inspect_nontrivial_empty, cuda::std::optional<nontrivial>)
-INSPECT(inspect_nontrivial, cuda::std::optional<nontrivial>)
-INSPECT(inspect_nested_empty, nested_optional)
-INSPECT(inspect_nested_inner_empty, nested_optional)
-INSPECT(inspect_nested, nested_optional)
-INSPECT(inspect_tuple, tuple_optional)
-INSPECT(inspect_array, array_optional)
-INSPECT(inspect_empty_array, empty_array_optional)
-INSPECT(inspect_nested_array, nested_array_optional)
-INSPECT(inspect_null_pointer, cuda::std::optional<int*>)
-INSPECT(inspect_before_reset, cuda::std::optional<int>)
-INSPECT(inspect_after_reset, cuda::std::optional<int>)
-INSPECT(inspect_before_emplace, cuda::std::optional<int>)
-INSPECT(inspect_after_emplace, cuda::std::optional<int>)
-INSPECT(inspect_reference_empty, cuda::std::optional<int&>)
-INSPECT(inspect_reference, cuda::std::optional<int&>)
-INSPECT(inspect_reference_before_update, cuda::std::optional<int&>)
-INSPECT(inspect_reference_after_update, cuda::std::optional<int&>)
+[[gnu::noinline]] void inspect_int(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_zero(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_false(const cuda::std::optional<bool>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_const(const cuda::std::optional<const int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_alias(const optional_alias& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nontrivial_empty(const cuda::std::optional<nontrivial>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nontrivial(const cuda::std::optional<nontrivial>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nested_empty(const nested_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nested_inner_empty(const nested_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nested(const nested_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_tuple(const tuple_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_array(const array_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_empty_array(const empty_array_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_nested_array(const nested_array_optional& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_null_pointer(const cuda::std::optional<int*>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_before_reset(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_after_reset(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_before_emplace(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_after_emplace(const cuda::std::optional<int>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_reference_empty(const cuda::std::optional<int&>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_reference(const cuda::std::optional<int&>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_reference_before_update(const cuda::std::optional<int&>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
+
+[[gnu::noinline]] void inspect_reference_after_update(const cuda::std::optional<int&>& value)
+{
+  KEEP_FOR_DEBUGGER(value);
+}
 
 int main()
 {
@@ -109,7 +201,10 @@ int main()
   const cuda::std::optional<int&> reference{referenced};
   inspect_reference_empty(reference_empty);
   inspect_reference(reference);
-  inspect_reference_before_update(reference);
-  referenced = -44;
-  inspect_reference_after_update(reference);
+
+  int updated = 7;
+  const cuda::std::optional<int&> reference_updated{updated};
+  inspect_reference_before_update(reference_updated);
+  updated = -44;
+  inspect_reference_after_update(reference_updated);
 }

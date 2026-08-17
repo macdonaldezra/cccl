@@ -34,6 +34,9 @@ _LLDB_ECHO_PATTERN = re.compile(r"^\s*\(lldb\)\s")
 _GDB_VALUE_PREFIX_PATTERN = re.compile(r"^\s*\$\d+ = ")
 _TEMPLATE_PATTERN = re.compile(r">\s+>")
 _NONZERO_HEX_PATTERN = re.compile(r"\b0x(?!0+\b)[0-9a-fA-F]+\b")
+# LLDB's spelling for an expanded null-pointer child varies by version
+# (nullptr or zero-padded hex); collapse to the hex spelling.
+_NULL_POINTER_PATTERN = re.compile(r"(?<== )nullptr\b")
 _STREAM_UNIQUE_ID_PATTERN = re.compile(r"(?<=unique_id=)\d+")
 _NUMERIC_LITERAL_PATTERN = re.compile(r"\b(\d+)[uUlL]*(?![\w.])")
 # Backing-memory granularity varies by driver and device, so only zero versus
@@ -537,6 +540,7 @@ def normalize_output(output: str, debugger: DebuggerAdapter) -> str:
         # Some debuggers may print C++98 style > > for multiple templates.
         line = _TEMPLATE_PATTERN.sub(">>", line)
         line = _NONZERO_HEX_PATTERN.sub("<address>", line)
+        line = _NULL_POINTER_PATTERN.sub("0x0000000000000000", line)
         line = _STREAM_UNIQUE_ID_PATTERN.sub("<id>", line)
         line = _NUMERIC_LITERAL_PATTERN.sub(r"\1", line)
         line = _NONZERO_RESERVED_MEM_PATTERN.sub(r"\1\2<nonzero>", line)

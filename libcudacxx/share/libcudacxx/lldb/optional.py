@@ -23,26 +23,50 @@ def is_cuda_optional(value_type: lldb.SBType, _internal_dict: InternalDict) -> b
     )
 
 
-def _contained_value(value: lldb.SBValue) -> lldb.SBValue:
-    value_type = cccl_common.strip_reference(value.GetType()).GetTemplateArgumentType(0)
-    if value_type.IsReferenceType():
-        pointer = value.GetChildMemberWithName("__value_")
-        if not pointer.IsValid() or pointer.GetValueAsUnsigned(0) == 0:
-            return lldb.SBValue()
-        return pointer.Dereference().Clone("value")
+def _is_engaged(value: lldb.SBValue) -> bool | None:
+    """Return the engaged state, or ``None`` when it cannot be determined.
 
+    The reference specialization stores a pointer in ``__value_``; the other
+    specializations keep an ``__engaged_`` flag next to their storage. A
+    member that is missing or unreadable (e.g. behind a dangling pointer)
+    must not be reported as disengaged.
+    """
+    pointer = value.GetChildMemberWithName("__value_")
+    if pointer.IsValid():
+        if pointer.GetError().Fail():
+            return None
+        return pointer.GetValueAsUnsigned(0) != 0
     engaged = value.GetChildMemberWithName("__engaged_")
-    if not engaged.IsValid() or engaged.GetValueAsUnsigned(0) == 0:
+    if not engaged.IsValid() or engaged.GetError().Fail():
+        return None
+    return engaged.GetValueAsUnsigned(0) != 0
+
+
+def _clone_contained(value: lldb.SBValue) -> lldb.SBValue:
+    if not value.IsValid():
         return lldb.SBValue()
+    # Casting to the canonical type drops alias spellings like remove_cv_t,
+    # which GCC's debug info collapses to one argument-less name that LLDB's
+    # name-keyed formatter matching then applies to unrelated values.
+    return value.Cast(value.GetType().GetCanonicalType()).Clone("value")
+
+
+def _contained_value(value: lldb.SBValue) -> lldb.SBValue:
+    if not _is_engaged(value):
+        return lldb.SBValue()
+    pointer = value.GetChildMemberWithName("__value_")
+    if pointer.IsValid():
+        return _clone_contained(pointer.Dereference())
     storage = value.GetChildMemberWithName("__storage_")
-    if not storage.IsValid():
-        return lldb.SBValue()
-    return storage.GetChildMemberWithName("__val_").Clone("value")
+    return _clone_contained(storage.GetChildMemberWithName("__val_"))
 
 
 def optional_summary(value: lldb.SBValue, _internal_dict: InternalDict) -> str:
     value = cccl_common.strip_reference_value(value).GetNonSyntheticValue()
-    return "" if _contained_value(value).IsValid() else "nullopt"
+    engaged = _is_engaged(value)
+    if engaged is None:
+        return ""
+    return "" if engaged else "nullopt"
 
 
 class OptionalSyntheticProvider:
@@ -56,7 +80,9 @@ class OptionalSyntheticProvider:
 
     def update(self) -> bool:
         self.child = _contained_value(self.value)
-        return self.child.IsValid()
+        # False tells LLDB to rebuild children after each stop; a cached child
+        # count would go stale when the optional becomes engaged on resume.
+        return False
 
     def num_children(self) -> int:
         return int(self.child.IsValid())
@@ -65,7 +91,15 @@ class OptionalSyntheticProvider:
         return self.child.IsValid()
 
     def get_type_name(self) -> str:
-        return cccl_common.public_type_name(self.value.GetType())
+        value_type = cccl_common.strip_reference(self.value.GetType())
+        type_name = cccl_common.public_type_name(value_type)
+        payload_type = value_type.GetTemplateArgumentType(0)
+        if not cccl_common.is_cuda_tuple_type(payload_type):
+            return type_name
+        # A tuple payload's name falls to GCC's collapsed variadic spelling
+        # (optional<cuda::std::tuple<>>); rebuild it from the payload type.
+        prefix = type_name.split("<", 1)[0]
+        return f"{prefix}<{cccl_common.tuple_type_name(payload_type)}>"
 
     def get_child_index(self, name: str) -> int:
         return 0 if name == "value" else -1

@@ -77,7 +77,7 @@
 =============== optional.array.nested end ===============
 =============== optional.pointer.null begin ===============
 (cuda::std::optional<int *>) <address>: {
-  value = nullptr
+  value = 0x0000000000000000
 }
 =============== optional.pointer.null end ===============
 =============== optional.update.before_reset begin ===============
@@ -106,7 +106,7 @@
 =============== optional.reference end ===============
 =============== optional.reference.before_update begin ===============
 (cuda::std::optional<int &>) <address>: {
-  value = 12
+  value = 7
 }
 =============== optional.reference.before_update end ===============
 =============== optional.reference.after_update begin ===============

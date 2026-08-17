@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from types import ModuleType
 
@@ -14,11 +15,14 @@ import cccl_common
 import gdb
 import gdb.printing
 
+_OPTIONAL_PATTERN = re.compile(r"^cuda::std::optional<.+>$")
+
 
 def _is_cuda_optional(value_type: gdb.Type) -> bool:
-    value_type = cccl_common.canonical_type(value_type)
-    type_name = cccl_common.public_type_name(value_type)
-    return cccl_common.template_name(type_name) == "cuda::std::optional"
+    # Anchored to the complete name so pointers and arrays of optionals stay
+    # unclaimed.
+    type_name = cccl_common.canonical_type_name(value_type)
+    return _OPTIONAL_PATTERN.fullmatch(type_name) is not None
 
 
 class OptionalPrinter:
@@ -29,10 +33,12 @@ class OptionalPrinter:
         self.value = value
         self.type = cccl_common.canonical_type(value.type)
         self.type_name = cccl_common.public_type_name(self.type)
-        self.value_type = self.type.template_argument(0)
+        self.contained = self._contained_value()
 
     def _contained_value(self) -> gdb.Value | None:
-        if self.value_type.code == gdb.TYPE_CODE_REF:
+        # The reference specialization stores a pointer in __value_; the other
+        # specializations keep an __engaged_ flag next to their storage.
+        if any(field.name == "__value_" for field in self.type.fields()):
             pointer = self.value["__value_"]
             return None if int(pointer) == 0 else pointer.dereference()
         if not bool(self.value["__engaged_"]):
@@ -40,13 +46,13 @@ class OptionalPrinter:
         return self.value["__storage_"]["__val_"]
 
     def children(self) -> Iterator[tuple[str, gdb.Value]]:
-        contained = self._contained_value()
-        if contained is not None:
-            yield "value", contained
+        if self.contained is not None:
+            yield "value", self.contained
 
     def to_string(self) -> str:
-        if self._contained_value() is None:
-            return f"{self.type_name} = nullopt"
+        if self.contained is None:
+            # Same word as the LLDB printer, framed as a GDB-style annotation.
+            return f"{self.type_name} [nullopt]"
         return self.type_name
 
 
